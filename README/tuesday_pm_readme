@@ -1,0 +1,9 @@
+README for analyses of NEON LiDAR Data
+
+Code by Allie Weill
+amweill@ucdavis.edu
+June 21, 2016
+
+This set of analyses expects to have a directory of data sibling but not within it. Most of the data files are too large to include in the repository.
+
+Some output files are external to the directory.
