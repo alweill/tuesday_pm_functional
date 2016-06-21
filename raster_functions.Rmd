@@ -51,16 +51,21 @@ rcl.m <- matrix(class.m,
                 ncol=3, 
                 byrow=TRUE)
 rcl.m
-par(xpd=FALSE)
-density(chm,
-        xlab="Height",
-        main="Canopy heights at Teakettle")
-pdf(file = "TEAK_CHM_density_with_breaks3.pdf")
-abline(v = rcl.m[,2], col="red")
-dev.off()
+
 chm.byHeight <- reclassify(chm,rcl.m)
 plot(chm.byHeight)
 ```
+
+## Save PDF
+```{r save-pdf, eval=FALSE}
+pdf(file = "TEAK_CHM_density_with_breaks.pdf")
+density(chm,
+        xlab="Height",
+        main="Canopy heights at Teakettle")
+abline(v = rcl.m[,2], col="red")
+dev.off()
+```
+
 ## Create Hillshade
 ```{r create-hillshade}
 slope <- terrain(dsm, opt='slope')
@@ -93,7 +98,7 @@ legend((par()$usr[2] + 20), 4103300, # set xy legend location
        bty="n") # turn off border
 ```
 ## Export
-```{r export-file}
+```{r export-file, eval=FALSE}
 writeRaster(chm.byHeight,
             filename="../NEONdata/outputs/TEAK/TEAK_chm_byHeight.tif",
             format="GTiff",
