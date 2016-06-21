@@ -14,3 +14,93 @@ output: html_document
 1. PLOT - layer the classified raster on top of the hillshade, add a legend for each “class” - legends are super tricky to simplifying this process with a function would be good.  see: http://neon-workwithdata.github.io/neon-data-institute-2016/R/classify-by-threshold-R/  for my take on forcing a legend outside of the plot area using par settings. You may have other better forms of magic to make this work well. :)
 1. Export the plot figure to a pdf – publishable
 1. Export the classified raster as a geotiff with NaFlagg = -9999 to an outputs folder.
+
+## Libraries
+```{r load-libraries}
+library(raster)
+library(rhdf5)
+library(rgdal)
+library(neonAOP)
+```
+
+## Import raster
+```{r import-raster-files}
+chm <- raster("../NEONdata/D17-California/TEAK/2013/lidar/TEAK_lidarCHM.tif")
+#assign chm values of 0 to NA
+chm[chm==0] <- NA
+chm
+# dsm = digital surface model == top of canopy
+dsm <- raster("../NEONdata/D17-California/TEAK/2013/lidar/TEAK_lidarDSM.tif")
+# dtm = digital terrain model = elevation
+dtm <- raster("../NEONdata/D17-California/TEAK/2013/lidar/TEAK_lidarDTM.tif")
+```
+## Classify Raster
+```{r classify-raster}
+hist(chm)
+# first create a matrix of values that represent the classification ranges
+# Not a tree (less than 1 m)=NA, 5-10 m low tree=1, 10-20 m medium tree =2, 20 m and up large tree=3 
+class.m <- c(0, 5, NA,
+             5, 10, 1,
+             10, 30, 2,  
+             30 ,60, 3)
+abline(v=5, col="red")
+abline(v=10, col="red")
+abline(v=30, col="red")
+# reshape the object into a matrix with columns and rows
+rcl.m <- matrix(class.m, 
+                ncol=3, 
+                byrow=TRUE)
+rcl.m
+par(xpd=FALSE)
+density(chm,
+        xlab="Height",
+        main="Canopy heights at Teakettle")
+abline(v = rcl.m[,2], col="red")
+pdf(file = "TEAK_CHM_density_with_breaks3.pdf")
+chm.byHeight <- reclassify(chm,rcl.m)
+plot(chm.byHeight)
+```
+## Create Hillshade
+```{r create-hillshade}
+slope <- terrain(dsm, opt='slope')
+aspect <- terrain(dsm, opt='aspect')
+# create hillshade
+# numbers 
+dsm.hill <- hillShade(slope, aspect, 
+                      angle=40, 
+                      direction=270)
+# legend outside of the plot region
+# make room for a legend
+par(xpd = FALSE, mar=c(5.1, 4.1, 4.1, 4.5))
+plot(dsm.hill,
+     col=grey.colors(100, start=0, end=1),
+     legend=F)
+
+# overlay CHM on top of hillshade
+plot(chm.byHeight,
+     add=F,
+     col=c("yellow", "green","blue"),
+     legend=F,
+     main="Trees by height in Lower Teakettle Field Site")
+
+# allow legend to plot outside of bounds
+par(xpd=TRUE)
+
+legend((par()$usr[2] + 20), 4103300, # set xy legend location
+       legend = c("Small", "Medium", "Tall"),
+       fill = c("yellow", "green","blue"), 
+       bty="n") # turn off border
+```
+## Export
+```{r export-file}
+writeRaster(chm.byHeight,
+            filename="../NEONdata/outputs/TEAK/TEAK_chm_byHeight.tif",
+            format="GTiff",
+            options="COMPRESS=LZW",
+            overwrite = TRUE,
+            NAflag = -9999)
+```
+
+
+
+
